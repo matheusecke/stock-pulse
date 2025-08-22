@@ -1,0 +1,51 @@
+import {
+  Body,
+  Controller,
+  Post,
+  UseGuards,
+  UnauthorizedException,
+  Req,
+} from '@nestjs/common';
+import { AuthService } from './auth.service';
+import { AuthUserDto } from './dto/auth-user.dto';
+import { Tokens } from './types/tokens.type';
+import { JwtPayload, JwtRefreshPayload } from './types/jwt-payload.type';
+import { Request } from 'express';
+import { AccessTokenGuard } from 'src/common/guards/access-token.guard';
+import { RefreshTokenGuard } from 'src/common/guards/refresh-token.guard';
+
+@Controller('auth')
+export class AuthController {
+  constructor(private readonly authService: AuthService) {}
+
+  @Post('user/signup')
+  async signup(@Body() dto: AuthUserDto): Promise<Tokens> {
+    return this.authService.userSignup(dto);
+  }
+
+  @Post('user/login')
+  login(@Body() dto: AuthUserDto): Promise<Tokens> {
+    return this.authService.userLogin(dto);
+  }
+
+  @UseGuards(AccessTokenGuard)
+  @Post('user/logout')
+  logout(@Req() req: Request & { user?: JwtPayload }) {
+    if (!req.user) {
+      throw new UnauthorizedException();
+    }
+    return this.authService.userLogout(req.user.sub);
+  }
+
+  @UseGuards(RefreshTokenGuard)
+  @Post('refresh')
+  refreshTokens(
+    @Req() req: Request & { user?: JwtRefreshPayload },
+  ): Promise<Tokens> {
+    if (!req.user) {
+      throw new UnauthorizedException();
+    }
+    const user = req.user;
+    return this.authService.refreshTokens(user.sub, user.refreshToken);
+  }
+}
