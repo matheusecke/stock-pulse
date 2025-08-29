@@ -4,6 +4,7 @@ import { AuthUserDto } from './dto/auth-user.dto';
 import * as bcrypt from 'bcrypt';
 import { Tokens } from './types/tokens.type';
 import { JwtService } from '@nestjs/jwt';
+import { Role } from '@prisma/client';
 
 @Injectable()
 export class AuthService {
@@ -18,10 +19,15 @@ export class AuthService {
       data: {
         email: dto.email,
         hash,
+        role: 'USER',
       },
     });
 
-    const tokens = await this.getTokens(newUser.id, newUser.email);
+    const tokens = await this.getTokens(
+      newUser.id,
+      newUser.email,
+      newUser.role,
+    );
     await this.updateRefreshToken(newUser.id, tokens.refresh_token);
 
     return tokens;
@@ -40,7 +46,7 @@ export class AuthService {
 
     if (!passwordCompare) throw new ForbiddenException('Wrong Password');
 
-    const tokens = await this.getTokens(user.id, user.email);
+    const tokens = await this.getTokens(user.id, user.email, user.role);
     await this.updateRefreshToken(user.id, tokens.refresh_token);
 
     return tokens;
@@ -73,18 +79,19 @@ export class AuthService {
     const rtCompare = await bcrypt.compare(refreshToken, user.hashedRt);
     if (!rtCompare) throw new ForbiddenException('Invalid Refresh Token');
 
-    const tokens = await this.getTokens(user.id, user.email);
+    const tokens = await this.getTokens(user.id, user.email, user.role);
     await this.updateRefreshToken(user.id, tokens.refresh_token);
 
     return tokens;
   }
 
-  async getTokens(id: number, identifier: string) {
+  async getTokens(id: number, identifier: string, role: Role) {
     const [at, rt] = await Promise.all([
       this.jwtService.signAsync(
         {
           sub: id,
           identifier,
+          role,
         },
         {
           secret: process.env.JWT_ACCESS_SECRET,
@@ -95,6 +102,7 @@ export class AuthService {
         {
           sub: id,
           identifier,
+          role,
         },
         {
           secret: process.env.JWT_REFRESH_SECRET,
