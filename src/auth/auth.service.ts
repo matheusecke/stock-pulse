@@ -66,6 +66,34 @@ export class AuthService {
     });
   }
 
+  async createDefaultAdmin() {
+    const admin = await this.prisma.user.findFirst({
+      where: {
+        role: 'ADMIN',
+      },
+    });
+
+    if (admin) return;
+
+    const hash = await this.hashData(process.env.DEFAULT_ADMIN_PASSWORD!);
+    const newAdmin = await this.prisma.user.create({
+      data: {
+        email: process.env.DEFAULT_ADMIN_EMAIL!,
+        hash,
+        role: 'ADMIN',
+      },
+    });
+
+    const tokens = await this.getTokens(
+      newAdmin.id,
+      newAdmin.email,
+      newAdmin.role,
+    );
+    await this.updateRefreshToken(newAdmin.id, tokens.refresh_token);
+
+    return tokens;
+  }
+
   async refreshTokens(userId: number, refreshToken: string) {
     const user = await this.prisma.user.findUnique({
       where: {
@@ -95,7 +123,7 @@ export class AuthService {
         },
         {
           secret: process.env.JWT_ACCESS_SECRET,
-          expiresIn: 60 * 15,
+          expiresIn: 60 * 60,
         },
       ),
       this.jwtService.signAsync(

@@ -38,7 +38,7 @@ export class AuthController {
   }
 
   @UseGuards(RefreshTokenGuard)
-  @Post('refresh')
+  @Post('user/refresh')
   refreshTokens(
     @Req() req: Request & { user?: JwtRefreshPayload },
   ): Promise<Tokens> {
