@@ -8,4 +8,8 @@ export class AuthUserDto {
   @IsNotEmpty()
   @IsString()
   password: string;
+
+  @IsNotEmpty()
+  @IsString()
+  name: string;
 }

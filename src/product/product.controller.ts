@@ -22,6 +22,7 @@ import { UpdateProductDto } from './dto/update-product.dto';
 export class ProductController {
   constructor(private readonly productService: ProductService) {}
 
+  @UseGuards(AccessTokenGuard)
   @Get('list')
   async getAllProducts() {
     return this.productService.getAllProducts();

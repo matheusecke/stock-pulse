@@ -19,6 +19,7 @@ export class AuthService {
       data: {
         email: dto.email,
         hash,
+        name: dto.name,
         role: 'USER',
       },
     });
@@ -66,6 +67,27 @@ export class AuthService {
     });
   }
 
+  async adminSignup(dto: AuthUserDto): Promise<Tokens> {
+    const hash = await this.hashData(dto.password);
+    const newAdmin = await this.prisma.user.create({
+      data: {
+        email: dto.email,
+        hash,
+        name: dto.name,
+        role: 'ADMIN',
+      },
+    });
+
+    const tokens = await this.getTokens(
+      newAdmin.id,
+      newAdmin.email,
+      newAdmin.role,
+    );
+    await this.updateRefreshToken(newAdmin.id, tokens.refresh_token);
+
+    return tokens;
+  }
+
   async createDefaultAdmin() {
     const admin = await this.prisma.user.findFirst({
       where: {
@@ -80,6 +102,7 @@ export class AuthService {
       data: {
         email: process.env.DEFAULT_ADMIN_EMAIL!,
         hash,
+        name: 'Admin',
         role: 'ADMIN',
       },
     });
@@ -113,12 +136,12 @@ export class AuthService {
     return tokens;
   }
 
-  async getTokens(id: number, identifier: string, role: Role) {
+  async getTokens(id: number, email: string, role: Role) {
     const [at, rt] = await Promise.all([
       this.jwtService.signAsync(
         {
           sub: id,
-          identifier,
+          email,
           role,
         },
         {
@@ -129,7 +152,7 @@ export class AuthService {
       this.jwtService.signAsync(
         {
           sub: id,
-          identifier,
+          email,
           role,
         },
         {

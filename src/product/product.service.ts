@@ -26,7 +26,9 @@ export class ProductService {
   }
 
   async updateProductQuantity(id: number, dto: UpdateProductQuantityDto) {
-    const product = await this.prisma.product.findUnique({ where: { id } });
+    const product = await this.prisma.product.findUnique({
+      where: { id },
+    });
     if (!product) {
       throw new NotFoundException('Produto não encontrado');
     }
@@ -42,7 +44,9 @@ export class ProductService {
   }
 
   async updateProduct(id: number, dto: UpdateProductDto) {
-    const product = await this.prisma.product.findUnique({ where: { id } });
+    const product = await this.prisma.product.findUnique({
+      where: { id },
+    });
     if (!product) {
       throw new NotFoundException('Produto não encontrado');
     }
@@ -66,7 +70,9 @@ export class ProductService {
   }
 
   async deleteProduct(id: number) {
-    const product = await this.prisma.product.findUnique({ where: { id } });
+    const product = await this.prisma.product.findUnique({
+      where: { id },
+    });
     if (!product) {
       throw new NotFoundException('Produto não encontrado');
     }

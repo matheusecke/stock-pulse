@@ -13,6 +13,9 @@ import { JwtPayload, JwtRefreshPayload } from './types/jwt-payload.type';
 import { Request } from 'express';
 import { AccessTokenGuard } from 'src/common/guards/access-token.guard';
 import { RefreshTokenGuard } from 'src/common/guards/refresh-token.guard';
+import { RolesGuard } from 'src/common/guards/roles.guard';
+import { Roles } from './decorators/roles.decorator';
+import { Role } from '@prisma/client';
 
 @Controller('auth')
 export class AuthController {
@@ -35,6 +38,13 @@ export class AuthController {
       throw new UnauthorizedException();
     }
     return this.authService.userLogout(req.user.sub);
+  }
+
+  @Post('admin/signup')
+  @UseGuards(AccessTokenGuard, RolesGuard)
+  @Roles(Role.ADMIN)
+  async adminSignup(@Body() dto: AuthUserDto): Promise<Tokens> {
+    return this.authService.adminSignup(dto);
   }
 
   @UseGuards(RefreshTokenGuard)
