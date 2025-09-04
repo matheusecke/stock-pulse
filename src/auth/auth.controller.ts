@@ -21,18 +21,18 @@ import { Role } from '@prisma/client';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  @Post('user/signup')
+  @Post('users/signup')
   async signup(@Body() dto: AuthUserDto): Promise<Tokens> {
     return this.authService.userSignup(dto);
   }
 
-  @Post('user/login')
+  @Post('users/login')
   login(@Body() dto: AuthUserDto): Promise<Tokens> {
     return this.authService.userLogin(dto);
   }
 
   @UseGuards(AccessTokenGuard)
-  @Post('user/logout')
+  @Post('users/logout')
   logout(@Req() req: Request & { user?: JwtPayload }) {
     if (!req.user) {
       throw new UnauthorizedException();
@@ -48,7 +48,7 @@ export class AuthController {
   }
 
   @UseGuards(RefreshTokenGuard)
-  @Post('user/refresh')
+  @Post('users/refresh')
   refreshTokens(
     @Req() req: Request & { user?: JwtRefreshPayload },
   ): Promise<Tokens> {
