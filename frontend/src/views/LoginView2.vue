@@ -88,18 +88,6 @@ async function handleLogin() {
         </button>
       </form>
 
-      <!-- Divider -->
-      <div class="flex items-center my-6">
-        <div class="flex-grow border-t border-gray-700"></div>
-        <span class="mx-3 text-gray-500 text-sm">ou</span>
-        <div class="flex-grow border-t border-gray-700"></div>
-      </div>
-
-      <!-- Registro -->
-      <p class="mt-6 text-center text-sm text-gray-400">
-        Não tem conta?
-        <a href="#" class="text-[#fb8500] font-medium hover:underline">Criar conta</a>
-      </p>
     </div>
   </div>
 </template>

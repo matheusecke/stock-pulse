@@ -4,7 +4,6 @@ import DefaultLayout from "@/layouts/DefaultLayout.vue";
 import AuthLayout from "@/layouts/AuthLayout.vue";
 
 import HomeView from '../views/HomeView.vue'
-import LoginView from '../views/LoginView.vue';
 import LoginView2 from '../views/LoginView2.vue';
 import DashboardView from '../views/DashboardView.vue';
 import ProdutosView from '../views/ProdutosView.vue';

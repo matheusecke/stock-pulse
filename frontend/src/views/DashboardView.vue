@@ -112,15 +112,6 @@ onMounted(() => {
         </div>
       </div>
 
-      <!-- Gráfico -->
-      <div class="bg-white rounded-2xl border border-gray-200 shadow p-6">
-        <h2 class="text-xl font-bold text-gray-800 mb-4">Vendas da Semana</h2>
-        <div class="w-full h-48 bg-gray-100 rounded-lg flex items-end space-x-2 p-2">
-          <div v-for="n in 7" :key="n" :style="{ height: `${Math.floor(Math.random() * 100) + 20}px` }"
-               class="bg-yellow-500 rounded w-6 transition-all duration-300 hover:bg-yellow-400"></div>
-        </div>
-      </div>
-
       <!-- Produtos com Estoque Baixo -->
       <div v-if="!isLoading">
         <h2 class="text-2xl font-bold text-blue-300 mb-4">Produtos com Estoque Baixo</h2>

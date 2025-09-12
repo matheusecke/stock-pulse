@@ -5,8 +5,8 @@ Vagrant.configure("2") do |config|
     database.vm.box = "bento/ubuntu-22.04"
     database.vm.hostname = "db-vm"
     
-    # Rede interna para comunicação com backend (isolada do host)
-    database.vm.network "private_network", ip: "192.168.200.30", netmask: "255.255.255.0", vmware__netname: "vmnet20"
+    # Rede interna única para comunicação com backend
+    database.vm.network "private_network", ip: "192.168.90.30", netmask: "255.255.255.0", vmware__netname: "vmnet3"
     
     database.vm.provider "vmware_desktop" do |v|
       v.gui = true
@@ -91,9 +91,8 @@ Vagrant.configure("2") do |config|
     backend.vm.box = "bento/ubuntu-22.04"
     backend.vm.hostname = "backend-vm"
     
-    # Rede interna para comunicação com frontend e database
-    backend.vm.network "private_network", ip: "192.168.100.20", netmask: "255.255.255.0", vmware__netname: "vmnet10"
-    backend.vm.network "private_network", ip: "192.168.200.20", netmask: "255.255.255.0", vmware__netname: "vmnet20"
+    # Rede interna única para comunicação com frontend e database
+    backend.vm.network "private_network", ip: "192.168.90.20", netmask: "255.255.255.0", vmware__netname: "vmnet3"
     
     backend.vm.provider "vmware_desktop" do |v|
       v.gui = true
@@ -123,14 +122,17 @@ Vagrant.configure("2") do |config|
       
       # O arquivo .env já existe
       
+      # hosts internos para database
+      grep -q "192.168.90.30 database" /etc/hosts || echo "192.168.90.30 database" >> /etc/hosts
+      
       # Aguardar database estar disponível com timeout
       echo "Aguardando database ficar disponível..."
       timeout=300
       while [ $timeout -gt 0 ]; do
-        if nc -z 192.168.200.30 3306; then
+        if nc -z 192.168.90.30 3306; then
           echo "Porta 3306 acessível!"
           # Testar conexão real com MySQL
-          if mysql -h 192.168.200.30 -u stockpulse -pstockpulse123 -e "SELECT 1;" 2>/dev/null; then
+          if mysql -h 192.168.90.30 -u stockpulse -pstockpulse123 -e "SELECT 1;" 2>/dev/null; then
             echo "Database conectado com sucesso!"
             break
           else
@@ -145,7 +147,7 @@ Vagrant.configure("2") do |config|
       if [ $timeout -le 0 ]; then
         echo "ERRO: Timeout ao conectar com database"
         echo "Verificando status do database..."
-        nc -z 192.168.200.30 3306 && echo "Porta 3306 OK" || echo "Porta 3306 FALHOU"
+        nc -z 192.168.90.30 3306 && echo "Porta 3306 OK" || echo "Porta 3306 FALHOU"
         exit 1
       fi
       
@@ -169,7 +171,7 @@ Vagrant.configure("2") do |config|
       
       echo "=== Backend VM configurada com sucesso! ==="
       echo "NestJS rodando na porta 8000"
-      echo "IP: 192.168.200.20 (rede database) e 192.168.100.20 (rede frontend)"
+      echo "IP: 192.168.90.20 (rede interna)"
     SHELL
   end
   
@@ -183,8 +185,8 @@ Vagrant.configure("2") do |config|
     frontend.vm.network "forwarded_port", guest: 5173, host: 3000, host_ip: "0.0.0.0"
     frontend.vm.network "forwarded_port", guest: 5173, host: 5173, host_ip: "0.0.0.0"
     
-    # Rede interna para comunicação com backend
-    frontend.vm.network "private_network", ip: "192.168.100.10", netmask: "255.255.255.0", vmware__netname: "vmnet10"
+    # Rede interna única para comunicação com backend
+    frontend.vm.network "private_network", ip: "192.168.90.10", netmask: "255.255.255.0", vmware__netname: "vmnet3"
     
     frontend.vm.provider "vmware_desktop" do |v|
       v.gui = true
@@ -212,10 +214,8 @@ Vagrant.configure("2") do |config|
       cd /home/vagrant/frontend
       npm install
       
-      # Criar arquivo de configuração para API
-      cat > /home/vagrant/frontend/.env << EOF
-VITE_API_URL=http://192.168.100.20:3000
-EOF
+      # hosts internos para backend
+      grep -q "192.168.90.20 backend" /etc/hosts || echo "192.168.90.20 backend" >> /etc/hosts
       
       # Criar diretório de logs
       mkdir -p /home/vagrant/logs
@@ -224,7 +224,7 @@ EOF
       # Aguardar backend estar disponível
       echo "Aguardando backend ficar disponível..."
       timeout=180
-      while ! nc -z 192.168.100.20 8000 && [ $timeout -gt 0 ]; do
+      while ! nc -z 192.168.90.20 8000 && [ $timeout -gt 0 ]; do
         sleep 5
         timeout=$((timeout-5))
         echo "Tentando conectar ao backend... ($timeout segundos restantes)"
@@ -238,7 +238,7 @@ EOF
       
       echo "=== Frontend VM configurada com sucesso! ==="
       echo "Vue.js rodando na porta 5173"
-      echo "IP: 192.168.100.10 (rede interna)"
+      echo "IP: 192.168.90.10 (rede interna)"
       echo "Acesse via: http://localhost:8080"
     SHELL
   end
