@@ -27,19 +27,19 @@ function save() {
       <form @submit.prevent="save" class="space-y-4">
         <div>
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Nome</label>
-          <input v-model="localProduct.nome" type="text" required class="mt-1 w-full px-3 py-2 border dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#fb8500]">
+          <input v-model="localProduct.name" type="text" required class="mt-1 w-full px-3 py-2 border dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#fb8500]">
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Categoria</label>
-          <input v-model="localProduct.categoria" type="text" required class="mt-1 w-full px-3 py-2 border dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#fb8500]">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Descrição</label>
+          <textarea v-model="localProduct.description" required class="mt-1 w-full px-3 py-2 border dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#fb8500] resize-none" rows="3"></textarea>
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Preço</label>
-          <input v-model.number="localProduct.preco" type="number" step="0.01" required class="mt-1 w-full px-3 py-2 border dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#fb8500]">
+          <input v-model.number="localProduct.price" type="number" step="0.01" required class="mt-1 w-full px-3 py-2 border dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#fb8500]">
         </div>
         <div>
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Estoque</label>
-          <input v-model.number="localProduct.estoque" type="number" required class="mt-1 w-full px-3 py-2 border dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#fb8500]">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Quantidade</label>
+          <input v-model.number="localProduct.quantity" type="number" required class="mt-1 w-full px-3 py-2 border dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#fb8500]">
         </div>
         <div class="flex justify-end gap-4 pt-4">
           <button type="button" @click="$emit('close')" class="px-4 py-2 text-gray-200 font-semibold rounded-lg bg-red-500 hover:bg-red-700 hover:text-white transition">Cancelar</button>

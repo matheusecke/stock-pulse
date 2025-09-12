@@ -1,25 +1,50 @@
 <script setup>
-import { ref, computed } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { isAuthenticated, logout } from "@/auth";
 import Naologado from "@/components/Naologado.vue";
+import { getProducts } from "@/services/products.js";
 
 const loggedin = computed(() => isAuthenticated.value);
+const produtos = ref([]);
+const isLoading = ref(false);
 
 function handleLogout() {
   logout();
 }
 
-// Dados de exemplo
-const produtosEmEstoque = ref(1428);
-const vendasDoMes = ref(24700);
-const alertasEstoque = ref(12);
+// Estatísticas calculadas
+const totalProdutos = computed(() => produtos.value.length);
+const totalEstoque = computed(() => 
+  produtos.value.reduce((total, produto) => total + (produto.quantity || 0), 0)
+);
+const produtosBaixoEstoque = computed(() => 
+  produtos.value.filter(produto => (produto.quantity || 0) <= 10).length
+);
+const valorTotalEstoque = computed(() => 
+  produtos.value.reduce((total, produto) => 
+    total + ((produto.price || 0) * (produto.quantity || 0)), 0
+  )
+);
 
-const atividadeRecente = ref([
-  { id: 1, acao: "Adicionado", produto: "Pão Francês", quantidade: 50, data: "07/09/2025" },
-  { id: 2, acao: "Vendido", produto: "Coca-Cola 2L", quantidade: 20, data: "06/09/2025" },
-  { id: 3, acao: "Baixa no estoque", produto: "Queijo Mussarela", quantidade: 5, data: "06/09/2025" },
-  { id: 4, acao: "Adicionado", produto: "Leite Integral", quantidade: 100, data: "05/09/2025" },
-]);
+// Carregar produtos da API
+async function loadProducts() {
+  if (!loggedin.value) return;
+  
+  isLoading.value = true;
+  try {
+    const response = await getProducts();
+    produtos.value = response;
+  } catch (error) {
+    console.error('Erro ao carregar produtos:', error);
+  } finally {
+    isLoading.value = false;
+  }
+}
+
+// Inicializar dados
+onMounted(() => {
+  loadProducts();
+});
 </script>
 
 <template>
@@ -31,44 +56,59 @@ const atividadeRecente = ref([
       </header>
 
       <!-- Cards -->
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <div class="bg-white p-6 rounded-2xl border border-gray-200 flex items-center justify-between shadow hover:shadow-lg transition">
+      <div v-if="isLoading" class="flex justify-center items-center py-12">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-[#fb8500]"></div>
+        <span class="ml-3 text-gray-600">Carregando estatísticas...</span>
+      </div>
+      
+      <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow hover:shadow-lg transition">
           <div class="flex items-center space-x-4">
             <div class="bg-blue-100 p-3 rounded-full">
-              <span class="material-icons text-blue-600 text-2xl">inventory_2</span>
+              <span class="text-blue-600 text-2xl">📦</span>
             </div>
             <div>
-              <p class="text-sm text-gray-600">Produtos em Estoque</p>
-              <p class="text-2xl font-bold text-gray-900">{{ produtosEmEstoque }}</p>
+              <p class="text-sm text-gray-600">Total de Produtos</p>
+              <p class="text-2xl font-bold text-gray-900">{{ totalProdutos }}</p>
             </div>
           </div>
-          <router-link to="/produtos" class="px-3 py-1 bg-yellow-500 text-white rounded-lg text-sm hover:bg-yellow-400 transition">Ver detalhes</router-link>
+          <router-link to="/produtos" class="mt-4 inline-block px-3 py-1 bg-[#fb8500] text-white rounded-lg text-sm hover:bg-[#e67600] transition">Ver produtos</router-link>
         </div>
 
-        <div class="bg-white p-6 rounded-2xl border border-gray-200 flex items-center justify-between shadow hover:shadow-lg transition">
+        <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow hover:shadow-lg transition">
           <div class="flex items-center space-x-4">
             <div class="bg-green-100 p-3 rounded-full">
-              <span class="material-icons text-green-600 text-2xl">trending_up</span>
+              <span class="text-green-600 text-2xl">📊</span>
             </div>
             <div>
-              <p class="text-sm text-gray-600">Vendas do Mês</p>
-              <p class="text-2xl font-bold text-gray-900">R$ {{ vendasDoMes.toLocaleString() }}</p>
+              <p class="text-sm text-gray-600">Total em Estoque</p>
+              <p class="text-2xl font-bold text-gray-900">{{ totalEstoque }}</p>
             </div>
           </div>
-          <button class="px-3 py-1 bg-yellow-500 text-white rounded-lg text-sm hover:bg-yellow-400 transition">Ver gráficos</button>
         </div>
 
-        <div class="bg-white p-6 rounded-2xl border border-gray-200 flex items-center justify-between shadow hover:shadow-lg transition">
+        <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow hover:shadow-lg transition">
           <div class="flex items-center space-x-4">
             <div class="bg-yellow-100 p-3 rounded-full">
-              <span class="material-icons text-yellow-600 text-2xl">warning</span>
+              <span class="text-yellow-600 text-2xl">⚠️</span>
             </div>
             <div>
-              <p class="text-sm text-gray-600">Alertas de Estoque Baixo</p>
-              <p class="text-2xl font-bold text-gray-900">{{ alertasEstoque }}</p>
+              <p class="text-sm text-gray-600">Estoque Baixo</p>
+              <p class="text-2xl font-bold text-gray-900">{{ produtosBaixoEstoque }}</p>
             </div>
           </div>
-          <button class="px-3 py-1 bg-yellow-500 text-white rounded-lg text-sm hover:bg-yellow-400 transition">Ver alertas</button>
+        </div>
+
+        <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow hover:shadow-lg transition">
+          <div class="flex items-center space-x-4">
+            <div class="bg-purple-100 p-3 rounded-full">
+              <span class="text-purple-600 text-2xl">💰</span>
+            </div>
+            <div>
+              <p class="text-sm text-gray-600">Valor Total</p>
+              <p class="text-2xl font-bold text-gray-900">R$ {{ valorTotalEstoque.toFixed(2) }}</p>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -81,28 +121,37 @@ const atividadeRecente = ref([
         </div>
       </div>
 
-      <!-- Atividade -->
-      <div>
-        <h2 class="text-2xl font-bold text-blue-300 mb-4">Atividade Recente</h2>
-        <div class="overflow-y-auto max-h-[300px] bg-white rounded-2xl border border-gray-200 shadow">
-          <table class="min-w-full text-left border-collapse">
-            <thead class="sticky top-0 bg-gray-100 text-gray-700">
-              <tr>
-                <th class="px-4 py-2 text-sm font-semibold">Ação</th>
-                <th class="px-4 py-2 text-sm font-semibold">Produto</th>
-                <th class="px-4 py-2 text-sm font-semibold">Quantidade</th>
-                <th class="px-4 py-2 text-sm font-semibold">Data</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="item in atividadeRecente" :key="item.id" class="border-t border-gray-200 hover:bg-gray-50 transition">
-                <td class="px-4 py-2 text-gray-700">{{ item.acao }}</td>
-                <td class="px-4 py-2 text-gray-800">{{ item.produto }}</td>
-                <td class="px-4 py-2 text-gray-700">{{ item.quantidade }}</td>
-                <td class="px-4 py-2 text-gray-600">{{ item.data }}</td>
-              </tr>
-            </tbody>
-          </table>
+      <!-- Produtos com Estoque Baixo -->
+      <div v-if="!isLoading">
+        <h2 class="text-2xl font-bold text-blue-300 mb-4">Produtos com Estoque Baixo</h2>
+        <div class="bg-white rounded-2xl border border-gray-200 shadow">
+          <div v-if="produtos.filter(p => (p.quantity || 0) <= 10).length === 0" class="p-6 text-center text-gray-500">
+            ✅ Todos os produtos têm estoque adequado!
+          </div>
+          <div v-else class="overflow-y-auto max-h-[300px]">
+            <table class="min-w-full text-left border-collapse">
+              <thead class="sticky top-0 bg-gray-100 text-gray-700">
+                <tr>
+                  <th class="px-4 py-2 text-sm font-semibold">Produto</th>
+                  <th class="px-4 py-2 text-sm font-semibold">Descrição</th>
+                  <th class="px-4 py-2 text-sm font-semibold">Estoque</th>
+                  <th class="px-4 py-2 text-sm font-semibold">Preço</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="produto in produtos.filter(p => (p.quantity || 0) <= 10)" :key="produto.id" class="border-t border-gray-200 hover:bg-gray-50 transition">
+                  <td class="px-4 py-2 text-gray-800 font-medium">{{ produto.name }}</td>
+                  <td class="px-4 py-2 text-gray-600">{{ produto.description }}</td>
+                  <td class="px-4 py-2">
+                    <span class="px-2 py-1 text-xs font-semibold rounded-full bg-red-200 text-red-800">
+                      {{ produto.quantity }}
+                    </span>
+                  </td>
+                  <td class="px-4 py-2 text-gray-700">R$ {{ produto.price?.toFixed(2) || '0.00' }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>

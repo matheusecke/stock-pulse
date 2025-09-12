@@ -1,13 +1,37 @@
 <script setup>
+import { ref } from "vue"
 import { login } from "@/auth"
 import { useRouter } from "vue-router"
 
 const router = useRouter()
 
-function handleLogin() {
-  // por enquanto não checa usuário/senha
-  login()
-  router.push("/home") // redireciona ao logar
+const email = ref('')
+const password = ref('')
+const errorMessage = ref('')
+const isLoading = ref(false)
+
+async function handleLogin() {
+  if (!email.value || !password.value) {
+    errorMessage.value = 'Por favor, preencha todos os campos'
+    return
+  }
+
+  isLoading.value = true
+  errorMessage.value = ''
+
+  try {
+    const result = await login(email.value, password.value)
+    
+    if (result.success) {
+      router.push("/home")
+    } else {
+      errorMessage.value = result.error || 'Erro no login'
+    }
+  } catch (error) {
+    errorMessage.value = 'Erro de conexão. Tente novamente.'
+  } finally {
+    isLoading.value = false
+  }
 }
 </script>
 
@@ -23,13 +47,20 @@ function handleLogin() {
 
       <!-- Formulário -->
       <form class="space-y-5" @submit.prevent="handleLogin">
+        <!-- Mensagem de erro -->
+        <div v-if="errorMessage" class="bg-red-900/50 border border-red-700 text-red-200 px-4 py-3 rounded-lg text-sm">
+          {{ errorMessage }}
+        </div>
+
         <!-- Email -->
         <div>
           <label class="block text-sm font-medium text-gray-300 mb-1">E-mail</label>
           <input
+            v-model="email"
             type="email"
             placeholder="seu@email.com"
-            class="w-full px-4 py-3 rounded-lg bg-gray-800 border border-gray-700 text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#fb8500] focus:border-transparent transition"
+            :disabled="isLoading"
+            class="w-full px-4 py-3 rounded-lg bg-gray-800 border border-gray-700 text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#fb8500] focus:border-transparent transition disabled:opacity-50"
           />
         </div>
 
@@ -37,23 +68,23 @@ function handleLogin() {
         <div>
           <label class="block text-sm font-medium text-gray-300 mb-1">Senha</label>
           <input
+            v-model="password"
             type="password"
             placeholder="••••••••"
-            class="w-full px-4 py-3 rounded-lg bg-gray-800 border border-gray-700 text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#fb8500] focus:border-transparent transition"
+            :disabled="isLoading"
+            class="w-full px-4 py-3 rounded-lg bg-gray-800 border border-gray-700 text-gray-200 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#fb8500] focus:border-transparent transition disabled:opacity-50"
           />
         </div>
 
-        <!-- Esqueci a senha -->
-        <div class="flex justify-end">
-          <a href="#" class="text-sm text-[#fb8500] hover:underline">Esqueci minha senha</a>
-        </div>
 
         <!-- Botão login -->
         <button
           type="submit"
-          class="w-full py-3 px-4 rounded-lg font-semibold text-white bg-[#fb8500] hover:bg-[#e67600] transition-colors duration-200 shadow-lg shadow-[#fb8500]/30"
+          :disabled="isLoading"
+          class="w-full py-3 px-4 rounded-lg font-semibold text-white bg-[#fb8500] hover:bg-[#e67600] transition-colors duration-200 shadow-lg shadow-[#fb8500]/30 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Entrar
+          <span v-if="isLoading">Entrando...</span>
+          <span v-else>Entrar</span>
         </button>
       </form>
 

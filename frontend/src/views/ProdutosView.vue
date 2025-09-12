@@ -1,23 +1,19 @@
 <script setup>
-import { ref, computed } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { isAuthenticated } from "@/auth";
 import Naologado from "@/components/Naologado.vue";
 import ProductFormModal from "@/components/ProductFormModal.vue";
 import DeleteConfirmationModal from "@/components/DeleteConfirmationModal.vue";
 import ToastNotification from "@/components/ToastNotification.vue";
 import { Edit, Trash2, PlusCircle } from 'lucide-vue-next';
+import { getProducts, createProduct, updateProduct, deleteProduct, updateProductQuantity } from "@/services/products.js";
 
 // --- ESTADO ---
 const loggedin = computed(() => isAuthenticated.value);
 const search = ref("");
-const sortBy = ref("nome");
-const produtos = ref([
-  { id: 1, nome: "Pão Francês", categoria: "Padaria", preco: 0.80, estoque: 150 },
-  { id: 2, nome: "Coca-Cola 2L", categoria: "Bebidas", preco: 9.50, estoque: 35 },
-  { id: 3, nome: "Queijo Mussarela", categoria: "Frios", preco: 32.90, estoque: 12 },
-  { id: 4, nome: "Detergente Ypê", categoria: "Limpeza", preco: 2.99, estoque: 0 },
-  { id: 5, nome: "Arroz Tio João 5kg", categoria: "Mercearia", preco: 22.50, estoque: 58 },
-]);
+const sortBy = ref("name");
+const produtos = ref([]);
+const isLoading = ref(false);
 
 const isAddEditModalOpen = ref(false);
 const isDeleteModalOpen = ref(false);
@@ -27,17 +23,38 @@ const toast = ref({ show: false, message: '', type: 'success' });
 // --- LÓGICA ---
 const filteredAndSortedProducts = computed(() => {
   let result = produtos.value.filter((p) =>
-    p.nome.toLowerCase().includes(search.value.toLowerCase())
+    p.name.toLowerCase().includes(search.value.toLowerCase())
   );
   const sortedResult = [...result];
-  if (sortBy.value === "nome") {
-    sortedResult.sort((a, b) => a.nome.localeCompare(b.nome));
-  } else if (sortBy.value === "preco") {
-    sortedResult.sort((a, b) => b.preco - a.preco);
-  } else if (sortBy.value === "estoque") {
-    sortedResult.sort((a, b) => a.estoque - b.estoque);
+  if (sortBy.value === "name") {
+    sortedResult.sort((a, b) => a.name.localeCompare(b.name));
+  } else if (sortBy.value === "price") {
+    sortedResult.sort((a, b) => b.price - a.price);
+  } else if (sortBy.value === "quantity") {
+    sortedResult.sort((a, b) => a.quantity - b.quantity);
   }
   return sortedResult;
+});
+
+// Carregar produtos da API
+async function loadProducts() {
+  if (!loggedin.value) return;
+  
+  isLoading.value = true;
+  try {
+    const response = await getProducts();
+    produtos.value = response;
+  } catch (error) {
+    showToast('Erro ao carregar produtos', 'error');
+    console.error('Erro ao carregar produtos:', error);
+  } finally {
+    isLoading.value = false;
+  }
+}
+
+// Inicializar dados
+onMounted(() => {
+  loadProducts();
 });
 
 function showToast(message, type = 'success') {
@@ -57,15 +74,16 @@ function getStockClass(stock) {
 function closeModals() {
   isAddEditModalOpen.value = false;
   isDeleteModalOpen.value = false;
+  currentProduct.value = null;
 }
 
 function openAddModal() {
-  currentProduct.value = { nome: '', categoria: '', preco: 0, estoque: 0 };
+  currentProduct.value = { name: '', description: '', price: 0, quantity: 0 };
   isAddEditModalOpen.value = true;
 }
 
 function openEditModal(produto) {
-  currentProduct.value = produto;
+  currentProduct.value = { ...produto };
   isAddEditModalOpen.value = true;
 }
 
@@ -74,22 +92,62 @@ function openDeleteModal(produto) {
   isDeleteModalOpen.value = true;
 }
 
-function saveProduct(productData) {
-  if (productData.id) {
-    const index = produtos.value.findIndex(p => p.id === productData.id);
-    if (index !== -1) produtos.value[index] = productData;
-  } else {
-    const newId = produtos.value.length > 0 ? Math.max(...produtos.value.map(p => p.id)) + 1 : 1;
-    produtos.value.push({ ...productData, id: newId });
+async function saveProduct(productData) {
+  try {
+    if (productData.id) {
+      // Atualizar produto existente
+      await updateProduct(productData.id, {
+        name: productData.name,
+        description: productData.description,
+        price: parseFloat(productData.price),
+        quantity: parseInt(productData.quantity)
+      });
+      showToast('Produto atualizado com sucesso!');
+    } else {
+      // Criar novo produto
+      await createProduct({
+        name: productData.name,
+        description: productData.description,
+        price: parseFloat(productData.price),
+        quantity: parseInt(productData.quantity)
+      });
+      showToast('Produto criado com sucesso!');
+    }
+    
+    // Recarregar lista de produtos
+    await loadProducts();
+    closeModals();
+  } catch (error) {
+    showToast('Erro ao salvar produto', 'error');
+    console.error('Erro ao salvar produto:', error);
   }
-  showToast('Produto salvo com sucesso!');
-  closeModals();
 }
 
-function deleteProduct() {
-  produtos.value = produtos.value.filter(p => p.id !== currentProduct.value.id);
-  showToast('Produto excluído com sucesso!', 'error');
-  closeModals();
+async function confirmDelete() {
+  try {
+    await deleteProduct(currentProduct.value.id);
+    showToast('Produto excluído com sucesso!');
+    
+    // Recarregar lista de produtos
+    await loadProducts();
+    closeModals();
+  } catch (error) {
+    showToast('Erro ao excluir produto', 'error');
+    console.error('Erro ao excluir produto:', error);
+  }
+}
+
+async function updateQuantity(productId, newQuantity) {
+  try {
+    await updateProductQuantity(productId, parseInt(newQuantity));
+    showToast('Quantidade atualizada com sucesso!');
+    
+    // Recarregar lista de produtos
+    await loadProducts();
+  } catch (error) {
+    showToast('Erro ao atualizar quantidade', 'error');
+    console.error('Erro ao atualizar quantidade:', error);
+  }
 }
 </script>
 
@@ -119,10 +177,9 @@ function deleteProduct() {
       v-model="sortBy"
       class="px-4 py-2 border text-gray-200 bg-gradient-to-br from-gray-900 via-gray-800 to-black border-gray-300 rounded-lg focus:ring-2 focus:ring-[#fb8500] focus:outline-none"
     >
-    
-      <option value="nome">Ordenar por Nome</option>
-      <option value="preco">Ordenar por Preço</option>
-      <option value="estoque">Ordenar por Estoque</option>
+      <option value="name">Ordenar por Nome</option>
+      <option value="price">Ordenar por Preço</option>
+      <option value="quantity">Ordenar por Estoque</option>
     </select>
   </div>
 </div>
@@ -135,7 +192,7 @@ function deleteProduct() {
             <thead class="sticky bg-gradient-to-br from-gray-900 via-gray-800 to-black top-0 bg-gray-100 z-10">
               <tr>
                 <th class="px-6 py-3 text-sm font-semibold text-gray-200">Nome</th>
-                <th class="px-6 py-3 text-sm font-semibold text-gray-200">Categoria</th>
+                <th class="px-6 py-3 text-sm font-semibold text-gray-200">Descrição</th>
                 <th class="px-6 py-3 text-sm font-semibold text-gray-200">Preço</th>
                 <th class="px-6 py-3 text-sm font-semibold text-gray-200">Estoque</th>
                 <th class="px-6 py-3 text-sm font-semibold text-gray-200 text-right">Ações</th>
@@ -148,15 +205,15 @@ function deleteProduct() {
                   :key="produto.id"
                   class="border-t border-gray-200 hover:bg-gray-50 transition"
                 >
-                  <td class="px-6 py-4 text-gray-800">{{ produto.nome }}</td>
-                  <td class="px-6 py-4 text-gray-600">{{ produto.categoria }}</td>
-                  <td class="px-6 py-4 text-gray-800">R$ {{ produto.preco.toFixed(2) }}</td>
+                  <td class="px-6 py-4 text-gray-800">{{ produto.name }}</td>
+                  <td class="px-6 py-4 text-gray-600">{{ produto.description }}</td>
+                  <td class="px-6 py-4 text-gray-800">R$ {{ produto.price?.toFixed(2) || '0.00' }}</td>
                   <td class="px-6 py-4">
                     <span
                       class="px-2 py-1 text-xs font-semibold rounded-full"
-                      :class="getStockClass(produto.estoque)"
+                      :class="getStockClass(produto.quantity)"
                     >
-                      {{ produto.estoque }}
+                      {{ produto.quantity }}
                     </span>
                   </td>
                   <td class="px-6 py-4 flex justify-end space-x-2">
@@ -175,9 +232,17 @@ function deleteProduct() {
                   </td>
                 </tr>
               </template>
-              <tr v-else>
+              <tr v-else-if="!isLoading">
                 <td colspan="5" class="text-center py-10 text-gray-500">
                   Nenhum produto encontrado.
+                </td>
+              </tr>
+              <tr v-if="isLoading">
+                <td colspan="5" class="text-center py-10 text-gray-500">
+                  <div class="flex items-center justify-center gap-2">
+                    <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-[#fb8500]"></div>
+                    Carregando produtos...
+                  </div>
                 </td>
               </tr>
             </tbody>
@@ -200,7 +265,7 @@ function deleteProduct() {
       :is-open="isDeleteModalOpen"
       :product="currentProduct"
       @close="closeModals"
-      @confirm="deleteProduct"
+      @confirm="confirmDelete"
     />
     <transition
       enter-active-class="transition ease-out duration-300"

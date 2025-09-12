@@ -1,6 +1,6 @@
 <script setup>
 // Assuming your Sidebar2 component is in src/components/
-import Sidebar2 from '@/components/Sidebar2.vue'; 
+import Sidebar2 from '@/components/SideBar2.vue'; 
 </script>
 
 <template>
