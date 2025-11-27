@@ -10,12 +10,17 @@ async function bootstrap() {
     origin: true, // Permite qualquer origem
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: false, // Desabilita credentials por enquanto
+    credentials: false,
   });
 
   app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
 
-  await app.get(AuthService).createDefaultAdmin();
+  try {
+    await app.get(AuthService).createDefaultAdmin();
+    console.log('Admin padrão criado/verificado com sucesso');
+  } catch (error) {
+    console.error('Erro ao criar admin padrão:', error);
+  }
 
   await app.listen(8000, '0.0.0.0');
 }
