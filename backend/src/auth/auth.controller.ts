@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { AuthUserDto } from './dto/auth-user.dto';
+import { AuthLoginDto } from './dto/auth-login.dto';
 import { Tokens } from './types/tokens.type';
 import { JwtPayload, JwtRefreshPayload } from './types/jwt-payload.type';
 import { Request } from 'express';
@@ -27,7 +28,7 @@ export class AuthController {
   }
 
   @Post('users/login')
-  login(@Body() dto: AuthUserDto): Promise<Tokens> {
+  login(@Body() dto: AuthLoginDto): Promise<Tokens> {
     return this.authService.userLogin(dto);
   }
 
