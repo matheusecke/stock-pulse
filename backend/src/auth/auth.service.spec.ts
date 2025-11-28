@@ -64,7 +64,7 @@ describe('AuthService', () => {
       mockJwtService.signAsync
         .mockResolvedValueOnce('access_token')
         .mockResolvedValueOnce('refresh_token');
-      mockPrismaService.user.update.mockResolvedValue(createdUser);
+      mockPrismaService.user.updateMany.mockResolvedValue({ count: 1 });
 
       const result = await authService.userSignup(dto);
 
@@ -106,7 +106,7 @@ describe('AuthService', () => {
       mockJwtService.signAsync
         .mockResolvedValueOnce('access_token')
         .mockResolvedValueOnce('refresh_token');
-      mockPrismaService.user.update.mockResolvedValue(existingUser);
+      mockPrismaService.user.updateMany.mockResolvedValue({ count: 1 });
 
       const result = await authService.userLogin(dto);
 
