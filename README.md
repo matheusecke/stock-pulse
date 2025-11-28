@@ -2,79 +2,141 @@
 
 Sistema de gerenciamento de estoque desenvolvido como projeto de Computação em Nuvem. Aplicação web completa para controle de produtos e estoque.
 
+## 📋 Tecnologias
+
+- **Frontend:** Vue.js 3 + Vite + TypeScript + Tailwind CSS
+- **Backend:** NestJS + Prisma
+- **Banco de Dados:** MySQL 8.0
+- **Containerização:** Docker + Docker Compose
+- **CI/CD:** GitHub Actions
+
 ## 🚀 Como Executar
 
 ### Pré-requisitos
 
-- Vagrant instalado
-- VMware Workstation/Player instalado
+- [Docker](https://docs.docker.com/get-docker/) instalado
+- [Docker Compose](https://docs.docker.com/compose/install/) instalado
 
-### Passos para Iniciar
+### Iniciar a Aplicação
 
-1. **Subir todas as VMs (recomendado):**
-
-```bash
-vagrant up
-```
-
-2. **Ou subir uma por vez (ordem recomendada):**
+1. **Clone o repositório e acesse a pasta:**
 
 ```bash
-vagrant up db-vm        # Database primeiro
-vagrant up backend-vm   # Backend segundo
-vagrant up frontend-vm  # Frontend por último
+git clone <url-do-repositorio>
+cd stock-pulse
 ```
 
-3. **Acessar a aplicação:**
+2. **Suba todos os serviços:**
 
-- Abra o navegador em: `http://localhost:8080`
+```bash
+docker compose up -d
+```
+
+3. **Acesse a aplicação:**
+
+| Serviço  | URL                   |
+| -------- | --------------------- |
+| Frontend | http://localhost:5173 |
+| Backend  | http://localhost:8000 |
+
+4. **Login padrão:**
+
+```
+Email: admin@stockpulse.com
+Senha: admin123
+```
 
 ### Comandos Úteis
 
 ```bash
-# Ver status das VMs
-vagrant status
+# Ver status dos containers
+docker compose ps
 
-# Acessar uma VM
-vagrant ssh frontend-vm
-vagrant ssh backend-vm
-vagrant ssh db-vm
+# Ver logs em tempo real
+docker compose logs -f
 
-# Reiniciar uma VM
-vagrant reload frontend-vm
+# Ver logs de um serviço específico
+docker compose logs -f backend
 
-# Parar todas as VMs
-vagrant halt
+# Parar todos os serviços
+docker compose down
 
-# Destruir todas as VMs
-vagrant destroy
+# Parar e remover volumes (limpa o banco)
+docker compose down -v
+
+# Reconstruir imagens após alterações
+docker compose up -d --build
 ```
 
-## 🌐 Acesso via Rede Local
+## 🧪 Testes
 
-Para acessar de outros dispositivos na mesma rede (ex: celular):
-
-1. **Descobrir o IP da sua máquina:**
+### Testes Unitários
 
 ```bash
-# Windows
-ipconfig | findstr "IPv4"
-
-# Linux/Mac
-ifconfig | grep "inet "
+cd backend
+npm install
+npx prisma generate
+npm run test
 ```
 
-2. **Acessar no navegador:**
+### Testes de Integração (E2E)
 
-```
-http://SEU_IP:8080
+Os testes E2E precisam de um banco MySQL rodando:
+
+```bash
+# 1. Subir o banco via Docker
+docker compose up db -d
+
+# 2. Criar banco de teste
+docker exec db mysql -uroot -proot -e "
+  CREATE DATABASE IF NOT EXISTS stockpulse_test;
+  CREATE USER IF NOT EXISTS 'test'@'%' IDENTIFIED BY 'test123';
+  GRANT ALL PRIVILEGES ON stockpulse_test.* TO 'test'@'%';
+  FLUSH PRIVILEGES;
+"
+
+# 3. Rodar os testes
+cd backend
+npm install
+npx prisma generate
+DATABASE_URL=mysql://test:test123@localhost:3306/stockpulse_test npx prisma db push
+npm run test:e2e
 ```
 
-Exemplo: Se seu IP for `192.168.1.100`, acesse `http://192.168.1.100:8080`
+## 🔄 CI/CD Pipeline
+
+O projeto utiliza GitHub Actions com os seguintes jobs:
+
+| Job            | Descrição                                    |
+| -------------- | -------------------------------------------- |
+| **Lint**       | Verifica estilo de código com ESLint         |
+| **Unit Tests** | Executa testes unitários                     |
+| **E2E Tests**  | Executa testes de integração com banco MySQL |
+
+O pipeline é executado automaticamente em:
+
+- Push para branches `main` e `dev`
+- Pull requests para `main`
 
 ## 📝 Funcionalidades
 
-- Gerenciamento de produtos
+- Sistema de autenticação (login/registro)
+- Gerenciamento de produtos (CRUD)
 - Controle de estoque
-- Dashboard com estatísticas
-- Sistema de autenticação
+- Painel administrativo
+- API RESTful protegida com JWT
+
+## 📁 Estrutura do Projeto
+
+```
+stock-pulse/
+├── backend/          # API NestJS
+│   ├── src/
+│   ├── test/         # Testes E2E
+│   └── prisma/       # Schema do banco
+├── frontend/         # App React
+│   └── src/
+├── docker-compose.yml
+└── .github/
+    └── workflows/    # Pipeline CI/CD
+```
