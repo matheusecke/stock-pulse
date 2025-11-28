@@ -150,8 +150,7 @@ describe('ProductService', () => {
 
       const updatedProduct = { ...existingProduct, ...dto };
 
-      // erro proposital: findFirst não existe
-      mockPrismaService.product.findFirst.mockResolvedValue(existingProduct);
+      mockPrismaService.product.findUnique.mockResolvedValue(existingProduct);
       mockPrismaService.product.update.mockResolvedValue(updatedProduct);
 
       const result = await productService.updateProduct(productId, dto);
