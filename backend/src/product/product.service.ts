@@ -81,7 +81,6 @@ export class ProductService {
       where: { id },
     });
 
-    // ERRO PROPOSITAL: retornando o produto ao invés da mensagem esperada
-    return product;
+    return { message: 'Produto deletado com sucesso' };
   }
 }
